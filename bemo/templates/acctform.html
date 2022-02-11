@@ -1,0 +1,48 @@
+{% extends "layout.html"%}
+{% block content%}
+	<form method="POST" action="">
+		{{ form.hidden_tag() }}
+		<legend>Join Now</legend>
+		<div class="form-group">
+		{{form.username.label}}
+		{%if form.username.errors%}
+			{%for error in form.username.errors%}
+				{{error}}
+			{%endfor%}
+		{%endif%}
+		{{form.username(class_="form-control", value=name)}}
+		</div>
+		<div class="form-group">
+		{{form.firstname.label}}
+		{%if form.firstname.errors%}
+			{%for error in form.firstname.errors%}
+				{{error}}
+			{%endfor%}
+		{%endif%}
+		{{form.firstname(class_="form-control", value=firstname)}}
+		</div>
+		<div class="form-group">
+		{{form.lastname.label}}
+		{%if form.lastname.errors%}
+			{%for error in form.lastname.errors%}
+				{{error}}
+			{%endfor%}
+		{%endif%}
+		{{form.lastname(class_="form-control", value=lastname)}}
+		</div>
+		{{form.submit1(class_="btn btn-primary")}}
+	</form>
+	<form method="POST" action="" enctype="multipart/form-data">
+		{{ form.hidden_tag() }}
+		<div class="form-group">
+		<img src="static/pics/{{img}}" class="avatar">
+		{%if pic.pic.errors%}
+			{%for error in form.pic.errors%}
+				{{error}}
+			{%endfor%}
+		{%endif%}
+		{{pic.pic(class_="form-control-file")}}
+		{{pic.submit2(class="")}}
+		</div>
+	</form>
+{%endblock content%}

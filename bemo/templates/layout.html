@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<!--<link rel="stylesheet" href="https://unpkg.com/purecss@2.0.6/build/pure-min.css" integrity="sha384-Uu6IeWbM+gzNVXJcM9XV3SohHtmWE+3VGi496jvgX1jyvDTXfdK+rfZc8C1Aehk5" crossorigin="anonymous">-->
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+	<style>
+		body {
+			margin: 40px;
+			background-color:#d0f0c0;
+		}
+		table, th, td{
+			border: solid #d0f0c0;
+		}
+	</style>
+</head>
+<body>
+	<marquee><h1>This Website Is Under Construction</h1></marquee>
+	<h1>{{title}}</h1>
+	{%if user%}
+	<img class="avatar" alt="pfp" src="static/pics/{{user.img_file}}" href="{{url_for('dashboard')}}" width="50" height="50"/>
+	<h3><a href="{{url_for('logout')}}">Logout</a></h3>
+	{%else%}
+	<h3><a href="{{url_for('login')}}">Login</a></h3>
+	{%endif%}
+	<center>
+		{%with messages = get_flashed_messages(with_categories=true)%}
+			{%if messages%}
+				{%for category, message in messages%}
+					{{message}}
+				{%endfor%}
+			{%endif%}
+		{%endwith%}
+		{%block content%} 
+		{%endblock content%}
+	</center>
+</body>
+</html>
