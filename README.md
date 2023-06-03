@@ -1,4 +1,4 @@
-# jack (was bemo)
+# kine
 A website to host problems in India.
 Configure with keys in init.py and run with run.py.  
 ## To-do:  
