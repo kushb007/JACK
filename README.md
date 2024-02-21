@@ -1,5 +1,5 @@
 # bemo
-A website to host problems in India. A demo is can be accessed [here](http://64.23.156.24).
+A website to host problems in India. A demo can be accessed [here](http://64.23.156.24).
 Configure with keys in init.py and run with run.py.  
 ## To-do:  
 - [x] Complete page layout
