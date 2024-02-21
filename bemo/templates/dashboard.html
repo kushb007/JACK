@@ -1,9 +1,16 @@
 {%extends "layout.html"%}
 {%block content%}
-    <img class="img-thumbnail rounded float-left" src="static/pics/{{user.img_file}}"/>
-    <h1>{{user.username}}</h1>
-    <h2>{{user.firstname}} {{user.lastname}}</h2>
-    <a class="btn btn-primary" href="{{url_for('updateacct')}}" role="button">Update Account</a>
-    <a class="btn btn-primary" href="{{url_for('uploadprob')}}" role="button">Upload Problem</a>
-    <a class="btn btn-primary btn-logout" href="{{url_for('logout')}}" role="button">Logout</a>
+    <div class="row">
+        <div class="col-5">
+            <img class="img-thumbnail rounded float-left" src="static/pics/{{user.img_file}}"/>
+        </div>
+        <div class="col-7">
+            <h1>{{user.username}}</h1>
+            <h2>{{user.firstname}} {{user.lastname}}</h2>
+            <h3 href="{{url_for('payment')}}">{{user.score}}</h3>
+        </div>
+    </div>
+    <div class="row">
+            <a class="btn btn-primary" href="{{url_for('editacct')}}" role="button">Update Account</a>
+    </div>
 {%endblock content%}

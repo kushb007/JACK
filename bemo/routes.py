@@ -1,45 +1,28 @@
 import json
 import requests
 import os
+from os import environ as env
 import secrets
 from flask import render_template, flash, redirect, url_for, jsonify, request
-from bemo import app, oauth, db, session
-from bemo.forms import Confirm, Picture, Create
-from bemo.models import User, Problem
-from functools import wraps
 from werkzeug.exceptions import HTTPException
 from werkzeug.utils import secure_filename
-from dotenv import load_dotenv, find_dotenv
 from six.moves.urllib.parse import urlencode
 from PIL import Image
-from urllib.parse import urlparse
-
+from functools import wraps
+from urllib.parse import urlparse, quote_plus
+from bemo import app, db, session, oauth
+from bemo.forms import Confirm, Picture, Create, Code
+from bemo.models import User, Problem, Submission
+import urllib.request
 auth0 = oauth.register(
     'auth0',
-    client_id='',
-    client_secret='ucATeBwYlEAAoPyUDiFYVbrdGpBUIYe8LcGdNexoGUgZvDyHPSVWo42EjzKsNMF0',
-    api_base_url='https://dev-h1cxd8ju.us.auth0.com',
-    access_token_url='https://dev-h1cxd8ju.us.auth0.com/oauth/token',
-    authorize_url='https://dev-h1cxd8ju.us.auth0.com/authorize',
+    client_id=env.get("AUTH0_CLIENT_ID"),
+    client_secret=env.get("AUTH0_CLIENT_SECRET"),
     client_kwargs={
         'scope': 'openid profile email',
     },
+    server_metadata_url=f'https://{env.get("AUTH0_DOMAIN")}/.well-known/openid-configuration',
 )
-
-problems = [
-  {
-    'author':'Me',
-    'title' : 'Very difficult one',
-    'content': 'contextuals',
-    #'date_posted': date(2003,12,12)
-  },
-  {
-    'author':'You',
-    'title' : 'ez problem',
-    'content': 'no contextuals',
-   # 'date_posted': date(2003,12,13)
-  }
-]
 
 def requires_auth(f):
   @wraps(f)
@@ -50,6 +33,7 @@ def requires_auth(f):
     return f(*args, **kwargs)
   return decorated
 
+#generate random (hopefully unique) filename for inputted picture
 def save_picture(inp_picture):
     random_hex = secrets.token_hex(8)
     _, f_ext = os.path.splitext(inp_picture.filename)
@@ -62,8 +46,8 @@ def save_picture(inp_picture):
 
 #homepage
 @app.route("/")
-@app.route("/home/<int:page_num>")
-def hello():
+@app.route("/home")
+def home():
   user = None
   if 'id' in session:
     user = User.query.filter_by(id=session['id']).first()
@@ -73,33 +57,50 @@ def hello():
   topsolvers = User.query.order_by(User.score).limit(5).all()
   return render_template('home.html', problems=problems, user=user, page=page, conts=topcontributors, solvs=topsolvers)
 
+#list out problems in table format
+@app.route("/problems")
+@app.route("/problems/<int:page_num>")
+def problems():
+  user = None
+  if 'id' in session:
+    user = User.query.filter_by(id=session['id']).first()
+  page = request.args.get('page', 1, type=int)
+  problems = Problem.query.order_by(Problem.date_posted.desc()).paginate(page=page, per_page=5)
+  topcontributors = User.query.order_by(User.contribution).limit(5).all()
+  topsolvers = User.query.order_by(User.score).limit(5).all()
+  return render_template('problems.html', problems=problems, user=user, page=page, conts=topcontributors, solvs=topsolvers)
+
+
 #login route for redirects
 @app.route("/login")
 def login():
   if 'profile' in session:
     print("Already have profile")
-    return redirect(url_for('hello'))
-  return auth0.authorize_redirect(redirect_uri='https://127.0.0.1:5000/callback')
+    return redirect(url_for('home'))
+  print("Calling auth0 for login")
+  return oauth.auth0.authorize_redirect(redirect_uri='https://127.0.0.1:5000/callback', _external=True)
 
 #configured to retrieve and store from auth0
-@app.route('/callback')
+@app.route('/callback', methods=["GET", "POST"])
 def callback_handling():
     # Handles response from token endpoint
-    auth0.authorize_access_token()
-    resp = auth0.get('userinfo')
-    userinfo = resp.json()
-    # Store the user information in flask session.
-    session['jwt_payload'] = userinfo
+    token = oauth.auth0.authorize_access_token() #TODO: add handling for declines
+    session["user"] = token #userinfo = token['userinfo']
+    # Store the user information in flask session
+    userinfo = token['userinfo']
     session['profile'] = {
         'user_id': userinfo['sub'],
         'name': userinfo['name'],
-        'picture': userinfo['picture'],
-        'sub': userinfo['sub']
+       'picture': userinfo['picture'],
+      'sub': userinfo['sub']
     }
     #redirect to new_login to create pair within database
-    if User.query.filter_by(sub=userinfo['sub']).first() is None:
+    detectedusr = User.query.filter_by(sub=userinfo['sub']).first()
+    print(detectedusr)
+    if detectedusr is None:
       return redirect(url_for('new_login'))
-    session['id'] = User.query.filter_by(sub=userinfo['sub']).first().id
+    session['id'] = detectedusr.id
+    print("Welcome "+detectedusr.username)
     return redirect('/dashboard')
 
 #initializes user within database
@@ -107,15 +108,14 @@ def callback_handling():
 def new_login():
   if 'id' in session or 'profile' not in session:
     return redirect('/')
-  #saves default picture
-  filename=secrets.token_hex(8)
-  with open(app.config['UPLOAD_FOLDER']+'pics/'+filename, 'wb') as f:
-    f.write(requests.get(session['profile']['picture']).content)
   #stores user's or auth0's picture
   pic = Picture()
   if pic.submit2.data and pic.validate():
-      filename=save_picture(pic.pic.data)
-  #creates user
+    filename=save_picture(pic.pic.data)
+  else:
+    filename=secrets.token_hex(8)
+    with open(app.config['UPLOAD_FOLDER']+'pics/'+filename, 'wb') as f:
+      f.write(requests.get(session['profile']['picture']).content) #connected default pic
   form = Confirm()
   if form.submit1.data and form.validate():
     user = User(
@@ -131,7 +131,7 @@ def new_login():
     flash('Your account has been created! You are now able to log in', 'success')
     return redirect('/dashboard')
   #renders form with auth0's default values
-  return render_template('acctform.html', 
+  return render_template('editacct.html', 
     title='New User', 
     form=form,
     pic=pic, 
@@ -147,6 +147,12 @@ def dashboard():
   user = User.query.filter_by(id=session['id']).first()
   return render_template('dashboard.html', user=user)
 
+@app.route('/payment')
+@requires_auth
+def payment():
+  user = User.query.filter_by(id=session['id']).first()
+  return render_template('payment.html', user=user)
+
 @app.route('/user/<username>')
 def show_user(username):
     user = None
@@ -158,7 +164,14 @@ def show_user(username):
       return "User Not Found"
     return f'User {escape(username)}'
 
-@app.route('/problem/<int:prob_id>')
+def check_sub(sub_id):
+  #TODO: check api for submission based on token stored in db and update
+  #also add to user total if updated
+  #daemon should periodically check for unupdated submissions
+  print("check")
+
+# show the problem with the given id
+@app.route('/problem/<int:prob_id>', methods=['GET','POST'])
 def show_prob(prob_id):
     user = None
     if 'id' in session:
@@ -166,13 +179,45 @@ def show_prob(prob_id):
     result = Problem.query.filter_by(id=prob_id).first()
     if result is None:
       return "Problem Not Found"
-    return "Found"
-    # show the post with the given id, the id is an integer
+    form = Code()
+    if form.submit4.data and form.validate():
+      print("code recieved")
+      #TODO: send code to api and generate id
+      #check_sub(sub_id)
+      return redirect('/')
+    return render_template('problem.html',problem=result,form=form)    
+
+@app.route('/submission/<int:sub_id>')
+def show_sub(sub_id):
+    user = None
+    if 'id' in session:
+      user = User.query.filter_by(id=session['id']).first()
+    result = Submission.query.filter_by(id=sub_id).first()
+    if result is None:
+      return "Submission Not Found"
+    if result.cases == -1:
+      check_sub(sub_id)
+      result = Submission.query.filter_by(id=sub_id).first()
+      if result.cases == -1:
+        return "Submission Processing, please come back"
+    problem =  Problem.query.filter_by(id=result.prob_id).first() 
+    user = User.query.filter_by(id=result.user_id).first() 
+    msg1 = ""
+    if problem.cases==result.cases:
+      msg1 = "Correct!"
+    else:
+      msg1 = "Incorrect"
+    msg2 = ""
+    for i in range(result.cases):
+      msg2+="✅"
+    for i in range(problem.cases-result.cases):
+      msg2+="❌"
+    return render_template('submission.html',submission=result,problem=problem,user=user,msg1=msg1,msg2=msg2)
 
 #updates user's columns
-@app.route('/update-account', methods=['GET','POST'])
+@app.route('/edit-account', methods=['GET','POST'])
 @requires_auth
-def updateacct():
+def editacct():
   user = User.query.filter_by(id=session['id']).first()
   pic = Picture()
   if pic.submit2.data and pic.validate():
@@ -186,7 +231,7 @@ def updateacct():
     db.session.commit()
     flash('Your account has been updated!', 'success')
     return redirect('/dashboard')
-  return render_template('acctform.html', title='Update User',
+  return render_template('editacct.html', title='Update User',
     form=form,
     pic=pic, 
     name=user.username,
@@ -194,95 +239,16 @@ def updateacct():
     lastname=user.lastname,
     img=user.img_file)
 
-#create problem
-@app.route('/upload-problem', methods=['GET','POST'])
-@requires_auth
-def uploadprob():
-  user = User.query.filter_by(id=session['id']).first()
-  pic = Picture()
-  fns = []
-  if pic.submit2.data and pic.validate():
-    fns.append(save_picture(pic.pic.data))
-  form = Create()
-  if form.submit3.data and form.validate():
-    prob = Problem(
-      title=form.title.data,
-      statement=form.statement.data,
-      input_exp=form.input_exp.data,
-      output_exp=form.output_exp.data,
-      samplein=form.samplein.data,
-      sampleout=form.sampleout.data,
-      note = form.note.data,
-      user_id = user.id
-      )
-    db.session.add(prob)
-    db.session.commit()
-    flash('Problem created!')
-    return redirect('/')
-  return render_template('probform.html', user=user, form=form, pic=pic, fns=fns,
-    title="",
-    statement="",
-    input_exp="",
-    outupt_exp="",
-    samplein="",
-    sampleout="",
-    note="")
-
-@app.route('/edit-problem/<int:prob_id>', methods=['GET','POST'])
-@requires_auth
-def editprob(prob_id):
-  user = User.query.filter_by(id=session['id']).first()
-  prob = Problem.query.filter_by(id=prob_id).first()
-  if prob is None or prob.user_id is not user.id:
-    return "Not Found"
-  note = ""
-  if prob.note:
-    prob.note
-  pic = Picture()
-  fns = []
-  if pic.submit2.data and pic.validate():
-    fns.append(save_picture(pic.pic.data))
-  form = Create()
-  if form.submit3.data and form.validate():
-    prob.title=form.title.data
-    prob.statement=form.statement.data,
-    prob.input_exp=form.input_exp.data,
-    prob.output_exp=form.output_exp.data,
-    prob.samplein=form.samplein.data,
-    prob.sampleout=form.sampleout.data,
-    prob.note = form.note.data,
-    db.session.commit()
-    flash('Problem edited!')
-    return redirect('/problem/'+prob.id)
-  return render_template('editprob.html', user=user, form=form, pic=pic, fns=fns,
-    title=prob.title,
-    statement=prob.statement,
-    input_exp=prob.input_exp,
-    outupt_exp=prob.output_exp,
-    samplein=prob.samplein,
-    sampleout=prob.sampleout,
-    note=note)
-
-@app.route('/delete-user')
+@app.route('/delete-user',methods =["GET", "POST"])
 @requires_auth
 def deleteuser():
-  user = User.query.filter_by(id=session['id']).first()
-  user.delete()
-  db.commit()
-  flash("User Deleted")
-  return redirect('/logout')
-
-@app.route('/delete-problem/<int:prob_id>')
-@requires_auth
-def deleteprob(prob_id):
-  user=User.query.filter_by(id=session['id']).first()
-  prob=Problem.query.filter_by(id=prob_id).first()
-  if prob is None or prob.author.id is not user.id:
-    return "Not Found"
-  prob.delete()
-  db.commit()
-  flash("Problem Deleted")
-  return redirect('/')
+  if request.method == "POST":
+    user = User.query.filter_by(id=session['id']).first()
+    user.delete()
+    db.commit()
+    flash("User Deleted")
+    return redirect('/logout')
+  return render_template('delacct.html')
 
 #clears session and redirects to auth0's logout endpoint
 @app.route('/logout')
@@ -290,6 +256,15 @@ def logout():
     # Clear session stored data
     session.clear()
     # Redirect user to logout endpoint
-    params = {'returnTo': url_for('hello', _external=True), 'client_id': ''}
     flash('Logged out!')
-    return redirect(auth0.api_base_url + '/v2/logout?' + urlencode(params))
+    return redirect(
+        "https://" + env.get("AUTH0_DOMAIN")
+        + "/v2/logout?"
+        + urlencode(
+            {
+                "returnTo": url_for("home", _external=True),
+                "client_id": env.get("AUTH0_CLIENT_ID"),
+            },
+            quote_via=quote_plus,
+        )
+    )

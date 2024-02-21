@@ -1,0 +1,40 @@
+{% extends "layout.html" %}
+{% block content %}
+	<ol>
+	{%for cont in conts.items%}
+			<li><a href="{{url_for('show_user',username=cont.username)}}">cont.username</a></li>
+	{%endfor%}
+	</ol>
+	<h2>
+	<h3>Top Solvers: </h3>
+	<ol>
+	{%for solv in solvs.items%}
+			<li><a href="{{url_for('show_user',username=solv.username)}}">solv.username</a></li>
+	{%endfor%}
+	</ol>
+	</h2>
+	<table class="table table-striped">
+		<thead>
+			<tr>
+				<th scope="col">Title</th>
+				<th scope="col">Category</th>
+				<th scope="col">Date(y/m/d)</th>
+				<th scope="col">Rating</th>
+			</tr>
+		</thead>
+		<tbody>
+		{%for problem in problems.items%}
+			<th scope="row"><a href="{{url_for('show_prob',prob_id=problem.id)}}">{{problem.title}}</a></th>
+			<td>{{problem.category}}</td>
+    		<td>{{problem.date_posted.strftime('%Y-%m-%d')}}</td>
+    		<td>{{problem.rating}}</td>
+		{%endfor%}
+		</tbody>
+	</table>
+	{%if page<problems.pages%}
+	<h3><a href="{{url_for('hello',page=page+1)}}">next</a></h3>
+	{%endif%}
+	{%if page>1%}
+	<h3><a href="{{url_for('hello',page=page-1)}}">previous</a></h3>
+	{%endif%}
+{% endblock content %}

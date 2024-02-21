@@ -40,4 +40,9 @@ class Create(FlaskForm):
 	note = TextAreaField('Note')
 	submit3 = SubmitField('Submit')
 
+class Code(FlaskForm):
+	code = FileField(
+			validators=[FileAllowed(['cpp','java'], 'Code only!'), DataRequired()])
+	submit4 = SubmitField('Upload File')
+
 

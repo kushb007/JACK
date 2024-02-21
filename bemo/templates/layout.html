@@ -3,37 +3,83 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<!--<link rel="stylesheet" href="https://unpkg.com/purecss@2.0.6/build/pure-min.css" integrity="sha384-Uu6IeWbM+gzNVXJcM9XV3SohHtmWE+3VGi496jvgX1jyvDTXfdK+rfZc8C1Aehk5" crossorigin="anonymous">-->
+	<meta name="description" content="">
+	<meta name="author" content="Kush Bhagat">
+	<title>Bemo 🐄 {{title}}</title>
+	<link rel="stylesheet" href="../static/bootstrap.min.css">
 	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
-	<style>
-		body {
-			margin: 40px;
-			background-color:#d0f0c0;
-		}
-		table, th, td{
-			border: solid #d0f0c0;
-		}
-	</style>
+	<link href="../static/starter-template.css" rel="stylesheet">
 </head>
 <body>
+	<header class="bd-header bg-dark py-3 d-flex align-items-stretch border-bottom border-dark">
+  		<div class="container-fluid d-flex align-items-center">
+    		<h1 class="d-flex align-items-center fs-4 text-white mb-0">
+      			<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-motherboard" viewBox="0 0 16 16">
+  						<path d="M11.5 2a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5Zm2 0a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5Zm-10 8a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1h-6Zm0 2a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1h-6ZM5 3a1 1 0 0 0-1 1h-.5a.5.5 0 0 0 0 1H4v1h-.5a.5.5 0 0 0 0 1H4a1 1 0 0 0 1 1v.5a.5.5 0 0 0 1 0V8h1v.5a.5.5 0 0 0 1 0V8a1 1 0 0 0 1-1h.5a.5.5 0 0 0 0-1H9V5h.5a.5.5 0 0 0 0-1H9a1 1 0 0 0-1-1v-.5a.5.5 0 0 0-1 0V3H6v-.5a.5.5 0 0 0-1 0V3Zm0 1h3v3H5V4Zm6.5 7a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h2a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-2Z"/>
+  						<path d="M1 2a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2v-2H.5a.5.5 0 0 1-.5-.5v-1A.5.5 0 0 1 .5 9H1V8H.5a.5.5 0 0 1-.5-.5v-1A.5.5 0 0 1 .5 6H1V5H.5a.5.5 0 0 1-.5-.5v-2A.5.5 0 0 1 .5 2H1Zm1 11a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v11Z"/>
+						</svg>
+						<i class="bi bi-motherboard"></i>
+      			Bemo
+    		</h1>
+    		
+  		</div>
+	</header>
+
+	<nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
+  <a class="navbar-brand" href="{{url_for('home')}}">
+  <img src="/docs/4.1/assets/brand/bootstrap-solid.svg" width="30" height="30" class="d-inline-block align-top" alt="">
+	Bemo</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="navbarSupportedContent">
+  	<form class="form-inline my-2 my-lg-0">
+      	<input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
+      	<button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+    </form>
+    <ul class="navbar-nav ms-auto my-2">
+      <li class="nav-item active">
+        <a class="nav-link" href="{{url_for('problems')}}">Problems<span class="sr-only">(current)</span></a>
+      </li>
+      {%if user%}
+      <li>
+			<img class="rounded-circle" alt="pfp" src="static/pics/{{user.img_file}}" href="{{url_for('dashboard')}}" width="32" height="32"/>
+			</li>
+			<li>
+			<a href="{{url_for('dashboard')}}" class="nav-link">{{user.username}}</a>
+			</li>
+			<li>
+			<a href="{{url_for('payment')}}" class="nav-link">{{user.score}}</a>
+			</li>
+			<li>
+			<a href="{{url_for('logout')}}" class="nav-link">Logout</a>
+			{%else%}
+			<a href="{{url_for('login')}}" class="nav-link">Login</a>
+			{%endif%}
+			</li>
+    	</ul>
+  	</div>
+	</nav>
+
+
 	<marquee><h1>This Website Is Under Construction</h1></marquee>
+
+
+	<div class="container-fluid">
 	<h1>{{title}}</h1>
-	{%if user%}
-	<img class="avatar" alt="pfp" src="static/pics/{{user.img_file}}" href="{{url_for('dashboard')}}" width="50" height="50"/>
-	<h3><a href="{{url_for('logout')}}">Logout</a></h3>
-	{%else%}
-	<h3><a href="{{url_for('login')}}">Login</a></h3>
-	{%endif%}
-	<center>
 		{%with messages = get_flashed_messages(with_categories=true)%}
 			{%if messages%}
 				{%for category, message in messages%}
-					{{message}}
+					<div class="alert alert-primary alert-dismissible fade show" role="alert">
+          	{{message}}
+          	<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        	</div>
 				{%endfor%}
 			{%endif%}
 		{%endwith%}
 		{%block content%} 
 		{%endblock content%}
-	</center>
+	</div>
 </body>
 </html>
