@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from flask_wtf.file import FileField, FileAllowed
+from wtforms.fields import FileField
 from wtforms import StringField, PasswordField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Length, Email, ValidationError, Regexp
 from bemo.models import User
@@ -27,7 +27,7 @@ class Confirm(FlaskForm):
 
 class Picture(FlaskForm):
 	pic = FileField(
-			validators=[FileAllowed(['jpg','png'], 'Images only!'), DataRequired()])
+			validators=[ DataRequired()])
 	submit2 = SubmitField('Upload File')
 
 class Create(FlaskForm):
@@ -42,7 +42,7 @@ class Create(FlaskForm):
 
 class Code(FlaskForm):
 	code = FileField(
-			validators=[FileAllowed(['cpp','java'], 'Code only!'), DataRequired()])
+			validators=[DataRequired()])
 	submit4 = SubmitField('Upload File')
 
 

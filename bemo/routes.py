@@ -14,6 +14,8 @@ from bemo import app, db, session, oauth
 from bemo.forms import Confirm, Picture, Create, Code
 from bemo.models import User, Problem, Submission
 import urllib.request
+
+
 auth0 = oauth.register(
     'auth0',
     client_id=env.get("AUTH0_CLIENT_ID"),
