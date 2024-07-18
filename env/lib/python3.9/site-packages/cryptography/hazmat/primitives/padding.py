@@ -2,6 +2,7 @@
 # 2.0, and the BSD License. See the LICENSE file in the root of this repository
 # for complete details.
 
+from __future__ import annotations
 
 import abc
 import typing
@@ -37,8 +38,8 @@ def _byte_padding_check(block_size: int) -> None:
 
 
 def _byte_padding_update(
-    buffer_: typing.Optional[bytes], data: bytes, block_size: int
-) -> typing.Tuple[bytes, bytes]:
+    buffer_: bytes | None, data: bytes, block_size: int
+) -> tuple[bytes, bytes]:
     if buffer_ is None:
         raise AlreadyFinalized("Context was already finalized.")
 
@@ -55,7 +56,7 @@ def _byte_padding_update(
 
 
 def _byte_padding_pad(
-    buffer_: typing.Optional[bytes],
+    buffer_: bytes | None,
     block_size: int,
     paddingfn: typing.Callable[[int], bytes],
 ) -> bytes:
@@ -67,8 +68,8 @@ def _byte_padding_pad(
 
 
 def _byte_unpadding_update(
-    buffer_: typing.Optional[bytes], data: bytes, block_size: int
-) -> typing.Tuple[bytes, bytes]:
+    buffer_: bytes | None, data: bytes, block_size: int
+) -> tuple[bytes, bytes]:
     if buffer_ is None:
         raise AlreadyFinalized("Context was already finalized.")
 
@@ -85,7 +86,7 @@ def _byte_unpadding_update(
 
 
 def _byte_unpadding_check(
-    buffer_: typing.Optional[bytes],
+    buffer_: bytes | None,
     block_size: int,
     checkfn: typing.Callable[[bytes], int],
 ) -> bytes:
@@ -117,7 +118,7 @@ class PKCS7:
 
 
 class _PKCS7PaddingContext(PaddingContext):
-    _buffer: typing.Optional[bytes]
+    _buffer: bytes | None
 
     def __init__(self, block_size: int):
         self.block_size = block_size
@@ -142,7 +143,7 @@ class _PKCS7PaddingContext(PaddingContext):
 
 
 class _PKCS7UnpaddingContext(PaddingContext):
-    _buffer: typing.Optional[bytes]
+    _buffer: bytes | None
 
     def __init__(self, block_size: int):
         self.block_size = block_size
@@ -176,7 +177,7 @@ class ANSIX923:
 
 
 class _ANSIX923PaddingContext(PaddingContext):
-    _buffer: typing.Optional[bytes]
+    _buffer: bytes | None
 
     def __init__(self, block_size: int):
         self.block_size = block_size
@@ -201,7 +202,7 @@ class _ANSIX923PaddingContext(PaddingContext):
 
 
 class _ANSIX923UnpaddingContext(PaddingContext):
-    _buffer: typing.Optional[bytes]
+    _buffer: bytes | None
 
     def __init__(self, block_size: int):
         self.block_size = block_size

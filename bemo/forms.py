@@ -13,7 +13,7 @@ class Confirm(FlaskForm):
 			validators=[DataRequired(), Length(min=2,max=20),Regexp(r"^(?=[a-zA-Z]{2,20}$)(?!.*[_.]{2})[^_.].*[^_.]$",0,"Must be only letters")])
 	lastname = StringField('Last name', 
 			validators=[DataRequired(), Length(min=2,max=20),Regexp(r"^(?=[a-zA-Z]{2,20}$)(?!.*[_.]{2})[^_.].*[^_.]$",0,"Must be only letters")])
-	submit1 = SubmitField('Submit')
+	submit = SubmitField('Submit')
 
 	def validate_username(self, username):
 		user = User.query.filter_by(username=username.data).first()
@@ -28,7 +28,7 @@ class Confirm(FlaskForm):
 class Picture(FlaskForm):
 	pic = FileField(
 			validators=[ DataRequired()])
-	submit2 = SubmitField('Upload File')
+	submit = SubmitField('Upload File')
 
 class Create(FlaskForm):
 	title = StringField('Title', validators=[DataRequired()])
@@ -38,11 +38,11 @@ class Create(FlaskForm):
 	samplein = TextAreaField('Sample Input', validators=[DataRequired()])
 	sampleout = TextAreaField('Sample Output', validators=[DataRequired()])
 	note = TextAreaField('Note')
-	submit3 = SubmitField('Submit')
+	submit = SubmitField('Submit')
 
 class Code(FlaskForm):
 	code = FileField(
 			validators=[DataRequired()])
-	submit4 = SubmitField('Upload File')
+	submit = SubmitField('Upload File')
 
 

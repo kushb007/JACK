@@ -2,6 +2,8 @@
 # 2.0, and the BSD License. See the LICENSE file in the root of this repository
 # for complete details.
 
+from __future__ import annotations
+
 import typing
 
 from cryptography import utils
@@ -38,12 +40,12 @@ class _KBKDFDeriver:
         mode: Mode,
         length: int,
         rlen: int,
-        llen: typing.Optional[int],
+        llen: int | None,
         location: CounterLocation,
-        break_location: typing.Optional[int],
-        label: typing.Optional[bytes],
-        context: typing.Optional[bytes],
-        fixed: typing.Optional[bytes],
+        break_location: int | None,
+        label: bytes | None,
+        context: bytes | None,
+        fixed: bytes | None,
     ):
         assert callable(prf)
 
@@ -179,14 +181,14 @@ class KBKDFHMAC(KeyDerivationFunction):
         mode: Mode,
         length: int,
         rlen: int,
-        llen: typing.Optional[int],
+        llen: int | None,
         location: CounterLocation,
-        label: typing.Optional[bytes],
-        context: typing.Optional[bytes],
-        fixed: typing.Optional[bytes],
+        label: bytes | None,
+        context: bytes | None,
+        fixed: bytes | None,
         backend: typing.Any = None,
         *,
-        break_location: typing.Optional[int] = None,
+        break_location: int | None = None,
     ):
         if not isinstance(algorithm, hashes.HashAlgorithm):
             raise UnsupportedAlgorithm(
@@ -237,14 +239,14 @@ class KBKDFCMAC(KeyDerivationFunction):
         mode: Mode,
         length: int,
         rlen: int,
-        llen: typing.Optional[int],
+        llen: int | None,
         location: CounterLocation,
-        label: typing.Optional[bytes],
-        context: typing.Optional[bytes],
-        fixed: typing.Optional[bytes],
+        label: bytes | None,
+        context: bytes | None,
+        fixed: bytes | None,
         backend: typing.Any = None,
         *,
-        break_location: typing.Optional[int] = None,
+        break_location: int | None = None,
     ):
         if not issubclass(
             algorithm, ciphers.BlockCipherAlgorithm
@@ -255,7 +257,7 @@ class KBKDFCMAC(KeyDerivationFunction):
             )
 
         self._algorithm = algorithm
-        self._cipher: typing.Optional[ciphers.BlockCipherAlgorithm] = None
+        self._cipher: ciphers.BlockCipherAlgorithm | None = None
 
         self._deriver = _KBKDFDeriver(
             self._prf,

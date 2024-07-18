@@ -14,6 +14,9 @@ from bemo import app, db, session, oauth
 from bemo.forms import Confirm, Picture, Create, Code
 from bemo.models import User, Problem, Submission
 import urllib.request
+import random
+import http.client
+import base64
 
 
 auth0 = oauth.register(
@@ -26,6 +29,7 @@ auth0 = oauth.register(
     server_metadata_url=f'https://{env.get("AUTH0_DOMAIN")}/.well-known/openid-configuration',
 )
 
+#wraps functions to require auth0 token for access
 def requires_auth(f):
   @wraps(f)
   def decorated(*args, **kwargs):
@@ -57,7 +61,8 @@ def home():
   problems = Problem.query.order_by(Problem.date_posted.desc()).paginate(page=page, per_page=5)
   topcontributors = User.query.order_by(User.contribution).limit(5).all()
   topsolvers = User.query.order_by(User.score).limit(5).all()
-  return render_template('home.html', problems=problems, user=user, page=page, conts=topcontributors, solvs=topsolvers)
+  randommessage = random.choice(["Welcome to Bemo!","Solve problems and earn points!","Join the community!","Compete with others!","Improve your coding skills!","Get started now!"])
+  return render_template('home.html', problems=problems, user=user, page=page, conts=topcontributors, solvs=topsolvers,randommessage=randommessage)
 
 #list out problems in table format
 @app.route("/problems")
@@ -80,20 +85,20 @@ def login():
     print("Already have profile")
     return redirect(url_for('home'))
   print("Calling auth0 for login")
-  return oauth.auth0.authorize_redirect(redirect_uri='https://127.0.0.1:5000/callback', _external=True)
+  return oauth.auth0.authorize_redirect(redirect_uri='https://127.0.0.1:5000/callback', _external=True) #TODO: change url_for after ssl
 
 #configured to retrieve and store from auth0
 @app.route('/callback', methods=["GET", "POST"])
-def callback_handling():
+def callback():
     # Handles response from token endpoint
     token = oauth.auth0.authorize_access_token() #TODO: add handling for declines
     session["user"] = token #userinfo = token['userinfo']
     # Store the user information in flask session
     userinfo = token['userinfo']
     session['profile'] = {
-        'user_id': userinfo['sub'],
-        'name': userinfo['name'],
-       'picture': userinfo['picture'],
+      'user_id': userinfo['sub'],
+      'name': userinfo['name'],
+      'picture': userinfo['picture'],
       'sub': userinfo['sub']
     }
     #redirect to new_login to create pair within database
@@ -112,14 +117,14 @@ def new_login():
     return redirect('/')
   #stores user's or auth0's picture
   pic = Picture()
-  if pic.submit2.data and pic.validate():
+  if pic.submit.data and pic.validate():
     filename=save_picture(pic.pic.data)
   else:
     filename=secrets.token_hex(8)
     with open(app.config['UPLOAD_FOLDER']+'pics/'+filename, 'wb') as f:
       f.write(requests.get(session['profile']['picture']).content) #connected default pic
   form = Confirm()
-  if form.submit1.data and form.validate():
+  if form.submit.data and form.validate():
     user = User(
       username=form.username.data,
       firstname=form.firstname.data, 
@@ -182,12 +187,37 @@ def show_prob(prob_id):
     if result is None:
       return "Problem Not Found"
     form = Code()
-    if form.submit4.data and form.validate():
+    if form.submit.data and form.validate():
       print("code recieved")
+      print(form.code.data.read())
+      bc = base64.b64encode(form.code.data.read()).decode('ascii')
+      conn = http.client.HTTPSConnection("judge0-ce.p.rapidapi.com")
+
+      payload = "{\"language_id\":52,\"source_code\":\"I2luY2x1ZGUgPHN0ZGlvLmg+CgppbnQgbWFpbih2b2lkKSB7CiAgY2hhciBuYW1lWzEwXTsKICBzY2FuZigiJXMiLCBuYW1lKTsKICBwcmludGYoImhlbGxvLCAlc1xuIiwgbmFtZSk7CiAgcmV0dXJuIDA7Cn0=\",\"stdin\":\"SnVkZ2Uw\"}"
+      payload = "{\"language_id\":52,\"source_code\":\""+bc+"\",\"stdin\":\"SnVkZ2Uw\"}"
+
+      headers = {
+          'x-rapidapi-key': "477e10fe7dmsh5189385f45a93e1p171958jsn2102f60c1c61",
+          'x-rapidapi-host': "judge0-ce.p.rapidapi.com",
+          'Content-Type': "application/json"
+      }
+
+      conn.request("POST", "/submissions?base64_encoded=true&wait=false&fields=*", payload, headers)
+
+      res = conn.getresponse()
+      data = res.read()
+      print(data.decode("utf-8"))
+      token = json.loads(data.decode("utf-8"))['token']
+      conn.request("GET", "/submissions/"+token+"?base64_encoded=true&fields=*", headers=headers)
+
+      res = conn.getresponse()
+      data = res.read()
+
+      print(data.decode("utf-8"))
       #TODO: send code to api and generate id
       #check_sub(sub_id)
       return redirect('/')
-    return render_template('problem.html',problem=result,form=form)    
+    return render_template('problem.html',problem=result,form=form,user=user)    
 
 @app.route('/submission/<int:sub_id>')
 def show_sub(sub_id):
@@ -222,11 +252,11 @@ def show_sub(sub_id):
 def editacct():
   user = User.query.filter_by(id=session['id']).first()
   pic = Picture()
-  if pic.submit2.data and pic.validate():
+  if pic.submit.data and pic.validate():
     user.img_file = save_picture(pic.pic.data)
     db.session.commit()
   form = Confirm()
-  if form.submit1.data and form.validate():
+  if form.submit.data and form.validate():
     user.username = form.username.data
     user.firstname = form.firstname.data
     user.lastname = form.lastname.data

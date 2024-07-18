@@ -25,13 +25,10 @@ class Problem(db.Model):
   rating = db.Column(db.Integer, nullable=False, default=0)
   cases = db.Column(db.Integer, nullable=False, default=0)
   #filenames semicolon seperated
-  #pics = db.Column(db.Text)
+  pics = db.Column(db.Text)
   inputs = db.Column(db.Text)
   outputs = db.Column(db.Text)
-  #ARRAY only work with postgre
-  #pics = db.Column(db.ARRAY(db.String(120))) 
-  #inputs = db.Column(db.ARRAY(db.String(120)))
-  #outputs = db.Column(db.ARRAY(db.String(120)))
+  solved = db.Column(db.Integer, nullable=False, default=0)
 
 class Submission(db.Model):
   id = db.Column(db.Integer, primary_key=True)

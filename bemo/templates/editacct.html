@@ -29,7 +29,7 @@
 		{%endif%}
 		{{form.lastname(class_="form-control", value=lastname, placeholder="Doe")}}
 		</div>
-		{{form.submit1(class_="btn btn-primary btn-block btn-lg")}}
+		{{form.submit(class_="btn btn-primary btn-block btn-lg")}}
 	</form>
 	<form method="POST" action="" class="form-acct" enctype="multipart/form-data">
 		{{ form.hidden_tag() }}
@@ -41,7 +41,7 @@
 			{%endfor%}
 		{%endif%}
 		{{pic.pic(class_="form-control-file")}}
-		{{pic.submit2(class="")}}
+		{{pic.submit(class="")}}
 		</div>
 	</form>
 {%endblock content%}

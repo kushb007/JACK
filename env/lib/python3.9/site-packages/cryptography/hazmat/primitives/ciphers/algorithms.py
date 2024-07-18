@@ -2,6 +2,7 @@
 # 2.0, and the BSD License. See the LICENSE file in the root of this repository
 # for complete details.
 
+from __future__ import annotations
 
 from cryptography import utils
 from cryptography.hazmat.primitives.ciphers import (
@@ -17,14 +18,12 @@ def _verify_key_size(algorithm: CipherAlgorithm, key: bytes) -> bytes:
     # Verify that the key size matches the expected key size
     if len(key) * 8 not in algorithm.key_sizes:
         raise ValueError(
-            "Invalid key size ({}) for {}.".format(
-                len(key) * 8, algorithm.name
-            )
+            f"Invalid key size ({len(key) * 8}) for {algorithm.name}."
         )
     return key
 
 
-class AES(CipherAlgorithm, BlockCipherAlgorithm):
+class AES(BlockCipherAlgorithm):
     name = "AES"
     block_size = 128
     # 512 added to support AES-256-XTS, which uses 512-bit keys
@@ -38,7 +37,7 @@ class AES(CipherAlgorithm, BlockCipherAlgorithm):
         return len(self.key) * 8
 
 
-class AES128(CipherAlgorithm, BlockCipherAlgorithm):
+class AES128(BlockCipherAlgorithm):
     name = "AES"
     block_size = 128
     key_sizes = frozenset([128])
@@ -48,7 +47,7 @@ class AES128(CipherAlgorithm, BlockCipherAlgorithm):
         self.key = _verify_key_size(self, key)
 
 
-class AES256(CipherAlgorithm, BlockCipherAlgorithm):
+class AES256(BlockCipherAlgorithm):
     name = "AES"
     block_size = 128
     key_sizes = frozenset([256])
@@ -58,7 +57,7 @@ class AES256(CipherAlgorithm, BlockCipherAlgorithm):
         self.key = _verify_key_size(self, key)
 
 
-class Camellia(CipherAlgorithm, BlockCipherAlgorithm):
+class Camellia(BlockCipherAlgorithm):
     name = "camellia"
     block_size = 128
     key_sizes = frozenset([128, 192, 256])
@@ -71,7 +70,7 @@ class Camellia(CipherAlgorithm, BlockCipherAlgorithm):
         return len(self.key) * 8
 
 
-class TripleDES(CipherAlgorithm, BlockCipherAlgorithm):
+class TripleDES(BlockCipherAlgorithm):
     name = "3DES"
     block_size = 64
     key_sizes = frozenset([64, 128, 192])
@@ -88,7 +87,7 @@ class TripleDES(CipherAlgorithm, BlockCipherAlgorithm):
         return len(self.key) * 8
 
 
-class Blowfish(CipherAlgorithm, BlockCipherAlgorithm):
+class Blowfish(BlockCipherAlgorithm):
     name = "Blowfish"
     block_size = 64
     key_sizes = frozenset(range(32, 449, 8))
@@ -105,13 +104,13 @@ _BlowfishInternal = Blowfish
 utils.deprecated(
     Blowfish,
     __name__,
-    "Blowfish has been deprecated",
+    "Blowfish has been deprecated and will be removed in a future release",
     utils.DeprecatedIn37,
     name="Blowfish",
 )
 
 
-class CAST5(CipherAlgorithm, BlockCipherAlgorithm):
+class CAST5(BlockCipherAlgorithm):
     name = "CAST5"
     block_size = 64
     key_sizes = frozenset(range(40, 129, 8))
@@ -128,7 +127,7 @@ _CAST5Internal = CAST5
 utils.deprecated(
     CAST5,
     __name__,
-    "CAST5 has been deprecated",
+    "CAST5 has been deprecated and will be removed in a future release",
     utils.DeprecatedIn37,
     name="CAST5",
 )
@@ -146,7 +145,7 @@ class ARC4(CipherAlgorithm):
         return len(self.key) * 8
 
 
-class IDEA(CipherAlgorithm, BlockCipherAlgorithm):
+class IDEA(BlockCipherAlgorithm):
     name = "IDEA"
     block_size = 64
     key_sizes = frozenset([128])
@@ -163,13 +162,13 @@ _IDEAInternal = IDEA
 utils.deprecated(
     IDEA,
     __name__,
-    "IDEA has been deprecated",
+    "IDEA has been deprecated and will be removed in a future release",
     utils.DeprecatedIn37,
     name="IDEA",
 )
 
 
-class SEED(CipherAlgorithm, BlockCipherAlgorithm):
+class SEED(BlockCipherAlgorithm):
     name = "SEED"
     block_size = 128
     key_sizes = frozenset([128])
@@ -186,7 +185,7 @@ _SEEDInternal = SEED
 utils.deprecated(
     SEED,
     __name__,
-    "SEED has been deprecated",
+    "SEED has been deprecated and will be removed in a future release",
     utils.DeprecatedIn37,
     name="SEED",
 )
@@ -214,7 +213,7 @@ class ChaCha20(CipherAlgorithm):
         return len(self.key) * 8
 
 
-class SM4(CipherAlgorithm, BlockCipherAlgorithm):
+class SM4(BlockCipherAlgorithm):
     name = "SM4"
     block_size = 128
     key_sizes = frozenset([128])

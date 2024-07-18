@@ -1,4 +1,4 @@
-#!/Users/kush/projs/bemocat/env/bin/python3
+#!/Users/kush/projs/bemo/env/bin/python
 # -*- coding: utf-8 -*-
 import re
 import sys
