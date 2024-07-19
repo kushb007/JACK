@@ -45,4 +45,4 @@ class Submission(db.Model):
 
 
   def __repr__(self):
-    return f"User('{self.title}','{self.date_posted}')"
+    return f"User('{self.message}','{self.id}')"

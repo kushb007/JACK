@@ -22,3 +22,17 @@
   padding: 15px;
   margin: 0 auto;
 }
+.form-problem {
+  width: 100%;
+  max-width: 3300px;
+  padding: 15px;
+  margin: 0 auto;
+}
+.form-text-area {
+  width: 100%;
+  max-width: 3300px;
+  height: 500px;
+  max-height: 10000px;
+  padding: 15px;
+  margin: 0 auto;
+}

@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms.fields import FileField
+from flask_wtf.file import FileField, FileRequired
 from wtforms import StringField, PasswordField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Length, Email, ValidationError, Regexp
 from bemo.models import User
@@ -42,7 +42,8 @@ class Create(FlaskForm):
 
 class Code(FlaskForm):
 	code = FileField(
-			validators=[DataRequired()])
+			validators=[])
+	code_area = TextAreaField("TextArea", default="""#include <iostream>\nusing namespace std;\nint main(){\n\tcout<<"Hello World!";\n}""")
 	submit = SubmitField('Upload File')
 
 

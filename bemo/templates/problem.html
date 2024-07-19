@@ -5,7 +5,7 @@
 <h4>{{problem.date_posted}}</h4>
 <body>{{problem.statement}}</body>
 {%if user%}
-<form method="POST" action="" class="form-acct" enctype="multipart/form-data">
+<form method="POST" action="" class="form-problem" enctype="multipart/form-data">
     {{ form.hidden_tag() }}
     <div class="form-group">
     {%if form.code.errors%}
@@ -13,6 +13,7 @@
         {{error}}
       {%endfor%}
     {%endif%}
+    {{form.code_area(class_="form-control form-control-lg form-text-area")}}
     {{form.code(class_="form-control-file")}}
     {{form.submit(class="")}}
     </div>

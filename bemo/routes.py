@@ -29,6 +29,12 @@ auth0 = oauth.register(
     server_metadata_url=f'https://{env.get("AUTH0_DOMAIN")}/.well-known/openid-configuration',
 )
 
+headers = {
+          'x-rapidapi-key': "477e10fe7dmsh5189385f45a93e1p171958jsn2102f60c1c61",
+          'x-rapidapi-host': "judge0-ce.p.rapidapi.com",
+          'Content-Type': "application/json"
+}
+
 #wraps functions to require auth0 token for access
 def requires_auth(f):
   @wraps(f)
@@ -188,35 +194,29 @@ def show_prob(prob_id):
       return "Problem Not Found"
     form = Code()
     if form.submit.data and form.validate():
+      if form.code.data is None and form.code_area.data is None:
+        return "No code recieved"
+      bytes_code = None
+      if form.code.data is None and form.code_area.data is not None:
+        bytes_code = base64.b64encode(bytes(form.code_area.data,'utf-8')).decode('ascii')
+      else:
+        bytes_code = base64.b64encode(form.code.data.read()).decode('ascii')
       print("code recieved")
-      print(form.code.data.read())
-      bc = base64.b64encode(form.code.data.read()).decode('ascii')
+      print(bytes_code)
+      #TODO: submit all cases in batches
       conn = http.client.HTTPSConnection("judge0-ce.p.rapidapi.com")
-
-      payload = "{\"language_id\":52,\"source_code\":\"I2luY2x1ZGUgPHN0ZGlvLmg+CgppbnQgbWFpbih2b2lkKSB7CiAgY2hhciBuYW1lWzEwXTsKICBzY2FuZigiJXMiLCBuYW1lKTsKICBwcmludGYoImhlbGxvLCAlc1xuIiwgbmFtZSk7CiAgcmV0dXJuIDA7Cn0=\",\"stdin\":\"SnVkZ2Uw\"}"
-      payload = "{\"language_id\":52,\"source_code\":\""+bc+"\",\"stdin\":\"SnVkZ2Uw\"}"
-
-      headers = {
-          'x-rapidapi-key': "477e10fe7dmsh5189385f45a93e1p171958jsn2102f60c1c61",
-          'x-rapidapi-host': "judge0-ce.p.rapidapi.com",
-          'Content-Type': "application/json"
-      }
-
+      payload = "{\"language_id\":52,\"source_code\":\""+bytes_code+"\",\"stdin\":\"SnVkZ2Uw\"}"
       conn.request("POST", "/submissions?base64_encoded=true&wait=false&fields=*", payload, headers)
-
       res = conn.getresponse()
       data = res.read()
       print(data.decode("utf-8"))
       token = json.loads(data.decode("utf-8"))['token']
-      conn.request("GET", "/submissions/"+token+"?base64_encoded=true&fields=*", headers=headers)
-
-      res = conn.getresponse()
-      data = res.read()
-
-      print(data.decode("utf-8"))
-      #TODO: send code to api and generate id
-      #check_sub(sub_id)
-      return redirect('/')
+      print(token)
+      submission = Submission(user_id=session['id'],problem_id=prob_id,token=token,cases=result.cases)
+      db.session.add(submission)
+      db.session.commit()
+      submission_id = Submission.query.filter_by(token=token).first().id
+      return redirect('/submission/'+str(submission_id))
     return render_template('problem.html',problem=result,form=form,user=user)    
 
 @app.route('/submission/<int:sub_id>')
@@ -227,12 +227,16 @@ def show_sub(sub_id):
     result = Submission.query.filter_by(id=sub_id).first()
     if result is None:
       return "Submission Not Found"
-    if result.cases == -1:
-      check_sub(sub_id)
-      result = Submission.query.filter_by(id=sub_id).first()
-      if result.cases == -1:
-        return "Submission Processing, please come back"
-    problem =  Problem.query.filter_by(id=result.prob_id).first() 
+    conn = http.client.HTTPSConnection("judge0-ce.p.rapidapi.com")
+    conn.request("GET", "/submissions/"+result.token+"?base64_encoded=true&fields=*", headers=headers)
+    res = conn.getresponse()
+    submission_data = json.loads(res.read().decode("utf-8"))
+    print(submission_data)
+    if(submission_data['status']['id']<3):
+      return "Processing"
+    return submission_data
+    #TODO: render submission page
+    problem =  Problem.query.filter_by(id=result.problem_id).first() 
     user = User.query.filter_by(id=result.user_id).first() 
     msg1 = ""
     if problem.cases==result.cases:
@@ -244,6 +248,7 @@ def show_sub(sub_id):
       msg2+="✅"
     for i in range(problem.cases-result.cases):
       msg2+="❌"
+    print(result)
     return render_template('submission.html',submission=result,problem=problem,user=user,msg1=msg1,msg2=msg2)
 
 #updates user's columns
