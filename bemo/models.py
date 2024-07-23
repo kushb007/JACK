@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from bemo import db, app
 
 class User(db.Model):
@@ -16,7 +16,7 @@ class User(db.Model):
 class Problem(db.Model):
   id = db.Column(db.Integer, primary_key=True)
   title = db.Column(db.String(20), unique=True, nullable=False)
-  date_posted = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+  date_posted = db.Column(db.DateTime, nullable=False, default=datetime.utcnow())
   statement = db.Column(db.Text, nullable=False)
   samplein = db.Column(db.Text)
   sampleout = db.Column(db.Text)
@@ -29,15 +29,19 @@ class Problem(db.Model):
   inputs = db.Column(db.Text)
   outputs = db.Column(db.Text)
   solved = db.Column(db.Integer, nullable=False, default=0)
+  solver = db.Column(db.Integer,db.ForeignKey(User.id),nullable=True)
+  gift_card = db.Column(db.Text, nullable=False, default="")
 
 class Submission(db.Model):
   id = db.Column(db.Integer, primary_key=True)
   user_id = db.Column(db.Integer,db.ForeignKey(User.id),nullable=False)
   problem_id = db.Column(db.Integer,db.ForeignKey(Problem.id),nullable=False)
-  cases = db.Column(db.Integer, default=-1)
-  correct = db.Column(db.Boolean)
-  message = db.Column(db.Text, default="")
+  cases = db.Column(db.Integer, default=0)
+  correct = db.Column(db.Boolean, default=False)
+  message = db.Column(db.Text, default="Processing")
   errline = db.Column(db.Integer)
+  last_check = db.Column(db.DateTime, nullable=False, default=datetime.utcnow())
+  checks = db.Column(db.Integer, nullable=False, default=0)
   #filenames semicolon seperated
   token = db.Column(db.Text)
   #ARRAY only work with postgre

@@ -17,7 +17,9 @@ import urllib.request
 import random
 import http.client
 import base64
-
+from datetime import datetime, timezone
+from square.http.auth.o_auth_2 import BearerAuthCredentials
+from square.client import Client
 
 auth0 = oauth.register(
     'auth0',
@@ -97,7 +99,7 @@ def login():
 @app.route('/callback', methods=["GET", "POST"])
 def callback():
     # Handles response from token endpoint
-    token = oauth.auth0.authorize_access_token() #TODO: add handling for declines
+    token = oauth.auth0.authorize_access_token()
     session["user"] = token #userinfo = token['userinfo']
     # Store the user information in flask session
     userinfo = token['userinfo']
@@ -177,12 +179,6 @@ def show_user(username):
       return "User Not Found"
     return f'User {escape(username)}'
 
-def check_sub(sub_id):
-  #TODO: check api for submission based on token stored in db and update
-  #also add to user total if updated
-  #daemon should periodically check for unupdated submissions
-  print("check")
-
 # show the problem with the given id
 @app.route('/problem/<int:prob_id>', methods=['GET','POST'])
 def show_prob(prob_id):
@@ -224,32 +220,97 @@ def show_sub(sub_id):
     user = None
     if 'id' in session:
       user = User.query.filter_by(id=session['id']).first()
-    result = Submission.query.filter_by(id=sub_id).first()
-    if result is None:
+    sub = Submission.query.filter_by(id=sub_id).first()
+    if sub is None:
       return "Submission Not Found"
-    conn = http.client.HTTPSConnection("judge0-ce.p.rapidapi.com")
-    conn.request("GET", "/submissions/"+result.token+"?base64_encoded=true&fields=*", headers=headers)
-    res = conn.getresponse()
-    submission_data = json.loads(res.read().decode("utf-8"))
-    print(submission_data)
-    if(submission_data['status']['id']<3):
-      return "Processing"
-    return submission_data
-    #TODO: render submission page
-    problem =  Problem.query.filter_by(id=result.problem_id).first() 
-    user = User.query.filter_by(id=result.user_id).first() 
-    msg1 = ""
-    if problem.cases==result.cases:
-      msg1 = "Correct!"
-    else:
-      msg1 = "Incorrect"
+    if (datetime.utcnow()-sub.last_check).total_seconds()>60**sub.checks:
+      print("sending request")
+      sub.last_check = datetime.utcnow()
+      sub.checks+=1
+      conn = http.client.HTTPSConnection("judge0-ce.p.rapidapi.com")
+      conn.request("GET", "/submissions/"+sub.token+"?base64_encoded=true&fields=*", headers=headers)
+      res = conn.getresponse()
+      submission_data = json.loads(res.read().decode("utf-8"))
+      sub.cases=0#TODO: update solved cases after switching to batch
+      if(submission_data['status']['id']<3):
+        sub.message = "Processing"
+      if(submission_data['status']['id']==3):
+        sub.message = "Accepted"
+      if(submission_data['status']['id']==4):
+        sub.message = "Wrong Answer"
+      db.session.commit()
+    problem =  Problem.query.filter_by(id=sub.problem_id).first() 
+    user = None
+    if 'id' in session:
+      user = User.query.filter_by(id=session['id']).first()
+    msg1 = sub.message
     msg2 = ""
-    for i in range(result.cases):
+    for i in range(sub.cases):
       msg2+="✅"
-    for i in range(problem.cases-result.cases):
+    for i in range(problem.cases-sub.cases):
       msg2+="❌"
-    print(result)
-    return render_template('submission.html',submission=result,problem=problem,user=user,msg1=msg1,msg2=msg2)
+    if sub.message=="Processing":
+      msg2="❓"*problem.cases
+    if sub.message=="Accepted" and user.id==sub.user_id:
+      #if user.solved==0: TODO: many to many relationship between solved problems and users
+      #  user.score+=1
+      #  problem.solved+=1
+      print("Accepted")
+      if(problem.solved==1):
+        problem.solver = user.id
+      if problem.solver==user.id and problem.gift_card=="":
+        #Sell gift card
+        client = Client(
+        bearer_auth_credentials=BearerAuthCredentials(
+            access_token=env.get('SQUARE_ACCESS_TOKEN')
+        ),
+        environment='sandbox')
+        location_id = "LRJ2A01YPD7WT"
+        idempotency_key = "EAAAl1_Uk8eYlfg56ZlDM9YUeRCRjXLv6pAIUcxQq3QGagY_5Ep0OdM9D_MbrOUQ"
+        print("selling...")
+        result = client.gift_cards.create_gift_card(
+        body = {
+          "idempotency_key": idempotency_key,
+          "location_id": location_id,
+          "gift_card": {
+            "type": "DIGITAL"
+          }
+        }
+        )
+        if result.is_success():
+          print(result.body)
+        elif result.is_error():
+          print(result.errors)
+        result = client.gift_card_activities.create_gift_card_activity(
+        body = {
+          "idempotency_key": idempotency_key,
+          "gift_card_activity": {
+            "type": "ACTIVATE",
+            "location_id": location_id,
+            "gift_card_id": result.body["gift_card"]["id"],
+            "activate_activity_details": {
+              "amount_money": {
+                "amount": 2500,
+                "currency": "USD"
+              },
+              "reference_id": "client-side-payment-id",
+              "buyer_payment_instrument_ids": [
+                "card-id-1",
+                "card-id-2"
+                ]
+              }
+            }
+          }
+        )
+        if result.is_success():
+          print(result.body)
+        elif result.is_error():
+          print(result.errors)
+        problem.gift_card="paid"
+        #problem.paid=result.body["gift_card_activity"]["gift_card_id"] TODO: setup payment scheme
+        #msg1+="\nGift Card: "+problem.paid
+      db.session.commit()
+    return render_template('submission.html',submission=sub,problem=problem,user=user,msg1=msg1,msg2=msg2)
 
 #updates user's columns
 @app.route('/edit-account', methods=['GET','POST'])

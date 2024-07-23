@@ -44,6 +44,6 @@ class Code(FlaskForm):
 	code = FileField(
 			validators=[])
 	code_area = TextAreaField("TextArea", default="""#include <iostream>\nusing namespace std;\nint main(){\n\tcout<<"Hello World!";\n}""")
-	submit = SubmitField('Upload File')
+	submit = SubmitField('submit')
 
 

@@ -15,6 +15,7 @@ app.config['SECRET_KEY'] = env.get("APP_SECRET_KEY")
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
 app.config['UPLOAD_FOLDER'] = os.getcwd()+'/bemo/static/'
 app.config['CLIENT_ID'] = env.get("AUTH0_CLIENT_ID")
+app.config['SQUARE_ACCESS_TOKEN'] = env.get("SQUARE_ACCESS_TOKEN")
 db = SQLAlchemy(app)
 oauth = OAuth(app)
 
