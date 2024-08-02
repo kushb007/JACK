@@ -4,6 +4,7 @@
 <h4>{{problem.category}}</h4>
 <h4>{{problem.date_posted}}</h4>
 <body>{{problem.statement}}</body>
+
 {%if user%}
 <form method="POST" action="" class="form-problem" enctype="multipart/form-data">
     {{ form.hidden_tag() }}
@@ -17,6 +18,26 @@
     {{form.code(class_="form-control-file")}}
     {{form.submit(class="")}}
     </div>
+    
   </form>
   {%endif%}
+<h1>ok</h1>
+<div id="editor">#include &lt;iostream&gt;
+  int main(){
+    cout&lt;&lt;"Hello World"&lt;&lt;endl;
+  }</div>
+<script src="../static/ace-builds-1.5.0/src-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
+<script>
+  var editor = ace.edit("editor");
+  editor.setTheme("ace/theme/monokai");
+  editor.session.setMode("ace/mode/c_cpp");
+  var $editor = $('#editor');
+    if ($editor.length > 0) {
+        var editor = ace.edit('editor');
+        editor.session.setMode("ace/mode/css");
+        function updateHiddenInput() {
+          document.getElementById('code_input').value = editor.getValue();
+        }
+    }
+</script>
 {% endblock content %}

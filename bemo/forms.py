@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileRequired
-from wtforms import StringField, PasswordField, SubmitField, TextAreaField
+from wtforms import StringField, PasswordField, SubmitField, TextAreaField, HiddenField
 from wtforms.validators import DataRequired, Length, Email, ValidationError, Regexp
 from bemo.models import User
 from bemo import session
@@ -43,7 +43,7 @@ class Create(FlaskForm):
 class Code(FlaskForm):
 	code = FileField(
 			validators=[])
-	code_area = TextAreaField("TextArea", default="""#include <iostream>\nusing namespace std;\nint main(){\n\tcout<<"Hello World!";\n}""")
+	code_area = HiddenField("TextArea",id="code_input", name="code_input")
 	submit = SubmitField('submit')
 
 
