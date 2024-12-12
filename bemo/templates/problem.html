@@ -22,22 +22,16 @@
   </form>
   {%endif%}
 <h1>ok</h1>
-<div id="editor">#include &lt;iostream&gt;
-  int main(){
-    cout&lt;&lt;"Hello World"&lt;&lt;endl;
-  }</div>
+<div id="editor">.</div>
 <script src="../static/ace-builds-1.5.0/src-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
 <script>
   var editor = ace.edit("editor");
-  editor.setTheme("ace/theme/monokai");
-  editor.session.setMode("ace/mode/c_cpp");
-  var $editor = $('#editor');
-    if ($editor.length > 0) {
-        var editor = ace.edit('editor');
-        editor.session.setMode("ace/mode/css");
-        function updateHiddenInput() {
-          document.getElementById('code_input').value = editor.getValue();
-        }
-    }
+    editor.setTheme("ace/theme/monokai");
+    editor.session.setMode("ace/mode/javascript");
+  var textarea = document.getElementById('code_input');
+  editor.getSession().setValue(textarea.value);
+  editor.getSession().on('change', function(){
+  textarea.value = editor.getSession().getValue();
+});
 </script>
 {% endblock content %}

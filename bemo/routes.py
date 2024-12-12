@@ -6,7 +6,6 @@ import secrets
 from flask import render_template, flash, redirect, url_for, jsonify, request
 from werkzeug.exceptions import HTTPException
 from werkzeug.utils import secure_filename
-from six.moves.urllib.parse import urlencode
 from PIL import Image
 from functools import wraps
 from urllib.parse import urlparse, quote_plus
@@ -231,6 +230,7 @@ def show_sub(sub_id):
       conn.request("GET", "/submissions/"+sub.token+"?base64_encoded=true&fields=*", headers=headers)
       res = conn.getresponse()
       submission_data = json.loads(res.read().decode("utf-8"))
+      print(submission_data)
       sub.cases=0#TODO: update solved cases after switching to batch
       if(submission_data['status']['id']<3):
         sub.message = "Processing"
@@ -258,58 +258,8 @@ def show_sub(sub_id):
       print("Accepted")
       if(problem.solved==1):
         problem.solver = user.id
-      if problem.solver==user.id and problem.gift_card=="":
-        #Sell gift card
-        client = Client(
-        bearer_auth_credentials=BearerAuthCredentials(
-            access_token=env.get('SQUARE_ACCESS_TOKEN')
-        ),
-        environment='sandbox')
-        location_id = "LRJ2A01YPD7WT"
-        idempotency_key = "EAAAl1_Uk8eYlfg56ZlDM9YUeRCRjXLv6pAIUcxQq3QGagY_5Ep0OdM9D_MbrOUQ"
-        print("selling...")
-        result = client.gift_cards.create_gift_card(
-        body = {
-          "idempotency_key": idempotency_key,
-          "location_id": location_id,
-          "gift_card": {
-            "type": "DIGITAL"
-          }
-        }
-        )
-        if result.is_success():
-          print(result.body)
-        elif result.is_error():
-          print(result.errors)
-        result = client.gift_card_activities.create_gift_card_activity(
-        body = {
-          "idempotency_key": idempotency_key,
-          "gift_card_activity": {
-            "type": "ACTIVATE",
-            "location_id": location_id,
-            "gift_card_id": result.body["gift_card"]["id"],
-            "activate_activity_details": {
-              "amount_money": {
-                "amount": 2500,
-                "currency": "USD"
-              },
-              "reference_id": "client-side-payment-id",
-              "buyer_payment_instrument_ids": [
-                "card-id-1",
-                "card-id-2"
-                ]
-              }
-            }
-          }
-        )
-        if result.is_success():
-          print(result.body)
-        elif result.is_error():
-          print(result.errors)
-        problem.gift_card="paid"
-        #problem.paid=result.body["gift_card_activity"]["gift_card_id"] TODO: setup payment scheme
-        #msg1+="\nGift Card: "+problem.paid
-      db.session.commit()
+      #if problem.solver==user.id and problem.gift_card=="": TODO: gift cards or paypal payouts 
+        
     return render_template('submission.html',submission=sub,problem=problem,user=user,msg1=msg1,msg2=msg2)
 
 #updates user's columns
