@@ -17,8 +17,6 @@ import random
 import http.client
 import base64
 from datetime import datetime, timezone
-from square.http.auth.o_auth_2 import BearerAuthCredentials
-from square.client import Client
 
 auth0 = oauth.register(
     'auth0',
