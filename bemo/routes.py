@@ -8,8 +8,8 @@ from werkzeug.exceptions import HTTPException
 from werkzeug.utils import secure_filename
 from PIL import Image
 from functools import wraps
-from urllib.parse import urlparse, quote_plus
-from bemo import app, db, session, oauth
+from urllib.parse import urlparse, quote_plus, urlencode
+from bemo import app, db, session, oauth, cache
 from bemo.forms import Confirm, Picture, Create, Code
 from bemo.models import User, Problem, Submission
 import urllib.request
@@ -17,6 +17,7 @@ import random
 import http.client
 import base64
 from datetime import datetime, timezone
+from re import escape
 
 auth0 = oauth.register(
     'auth0',
@@ -86,11 +87,13 @@ def problems():
 #login route for redirects
 @app.route("/login")
 def login():
-  if 'profile' in session:
+  if 'id' in session:
     print("Already have profile")
     return redirect(url_for('home'))
   print("Calling auth0 for login")
-  return oauth.auth0.authorize_redirect(redirect_uri='https://127.0.0.1:5000/callback', _external=True) #TODO: change url_for after ssl
+  redirect_url = url_for('callback', _external=True)
+  print(redirect_url)
+  return oauth.auth0.authorize_redirect(redirect_uri=redirect_url, _external=True)
 
 #configured to retrieve and store from auth0
 @app.route('/callback', methods=["GET", "POST"])
@@ -191,74 +194,120 @@ def show_prob(prob_id):
         return "No code recieved"
       bytes_code = None
       if form.code.data is None and form.code_area.data is not None:
+        print("Recieved", form.code_area.data)
         bytes_code = base64.b64encode(bytes(form.code_area.data,'utf-8')).decode('ascii')
       else:
+        print("Recieved", form.code.data)
         bytes_code = base64.b64encode(form.code.data.read()).decode('ascii')
-      print("code recieved")
-      print(bytes_code)
-      #TODO: submit all cases in batches
       conn = http.client.HTTPSConnection("judge0-ce.p.rapidapi.com")
-      payload = "{\"language_id\":52,\"source_code\":\""+bytes_code+"\",\"stdin\":\"SnVkZ2Uw\"}"
-      conn.request("POST", "/submissions?base64_encoded=true&wait=false&fields=*", payload, headers)
+      cases = {}
+      cases['submissions'] = []
+      print(result.inputs)
+      input_files = eval(result.inputs)
+      for input_file in input_files:
+          case = {}
+          case['language_id']='52'
+          case['source_code']=bytes_code
+          with open(app.config['UPLOAD_FOLDER']+'txts/'+input_file,'r') as f:
+              case['inputs']=f.read()
+          cases['submissions'].append(case)
+      payload = json.dumps(cases)
+      conn.request("POST", "/submissions/batch?base64_encoded=true", payload, headers)
       res = conn.getresponse()
       data = res.read()
       print(data.decode("utf-8"))
-      token = json.loads(data.decode("utf-8"))['token']
-      print(token)
-      submission = Submission(user_id=session['id'],problem_id=prob_id,token=token,cases=result.cases)
+      tokens = []
+      for d in json.loads(data.decode("utf-8")):
+          print(d)
+          if 'token' in d:
+              tokens.append(d['token'])
+          else:
+              tokens.append(None)
+      tokens_string = json.dumps(tokens)
+      submission = Submission(user_id=session['id'],problem_id=prob_id,tokens=tokens_string,cases=result.cases)
       db.session.add(submission)
       db.session.commit()
-      submission_id = Submission.query.filter_by(token=token).first().id
+      submission_id = Submission.query.filter_by(token=tokens_string).first().id
       return redirect('/submission/'+str(submission_id))
-    return render_template('problem.html',problem=result,form=form,user=user)    
+    return render_template('problem.html',problem=result,form=form,user=user,tags=eval(result.tags))
 
 @app.route('/submission/<int:sub_id>')
+@cache.cached(timeout=60, query_string=True)
 def show_sub(sub_id):
     user = None
     if 'id' in session:
       user = User.query.filter_by(id=session['id']).first()
     sub = Submission.query.filter_by(id=sub_id).first()
+    problem = Problem.query.filter_by(id=sub.problem_id).first()
     if sub is None:
       return "Submission Not Found"
-    if (datetime.utcnow()-sub.last_check).total_seconds()>60**sub.checks:
+    backoff_time = min(60 ** sub.checks, 10000)
+    if (datetime.utcnow()-sub.last_check).total_seconds()>backoff_time:
       print("sending request")
       sub.last_check = datetime.utcnow()
       sub.checks+=1
-      conn = http.client.HTTPSConnection("judge0-ce.p.rapidapi.com")
-      conn.request("GET", "/submissions/"+sub.token+"?base64_encoded=true&fields=*", headers=headers)
-      res = conn.getresponse()
-      submission_data = json.loads(res.read().decode("utf-8"))
-      print(submission_data)
-      sub.cases=0#TODO: update solved cases after switching to batch
-      if(submission_data['status']['id']<3):
-        sub.message = "Processing"
-      if(submission_data['status']['id']==3):
-        sub.message = "Accepted"
-      if(submission_data['status']['id']==4):
-        sub.message = "Wrong Answer"
+      tokens = eval(sub.tokens)
+      if len(tokens) != problem.cases:
+          tokens = [None] * problem.cases
+      statuses = eval(sub.statuses)
+      if len(statuses) != problem.cases:
+          statuses = [None] * problem.cases
+      results = []
+      correct_cases = 0
+      recieved_cases = 0
+      for i in range(len(tokens)):
+          token = tokens[i]
+          if token is None:
+              results.append('Compile error')
+          else:
+              if statuses[i] is None:
+                  conn = http.client.HTTPSConnection("judge0-ce.p.rapidapi.com")
+                  conn.request("GET", "/submissions/"+token+"?base64_encoded=true&fields=*", headers=headers)
+                  res = conn.getresponse()
+                  submission_data = json.loads(res.read().decode("utf-8"))
+                  print(submission_data)
+                  if(submission_data['status']['id']<3):
+                    results.append(None)
+                  else:
+                    recieved_cases += 1
+                    if(submission_data['status']['id']==3):
+                      results.append('Accepted')
+                      correct_cases+=1
+                    if(submission_data['status']['id']==4):
+                      results.append('Wrong Answer')
+      sub.correct = correct_cases
+      sub.recieved = recieved_cases
+      sub.status = json.dumps(results)
       db.session.commit()
-    problem =  Problem.query.filter_by(id=sub.problem_id).first() 
+    cases_string = ""
+    for status in eval(sub.status):
+        if status == 'Accepted':
+            cases_string += "✅"
+        elif status == 'Wrong Answer':
+            cases_string += "❌"
+        elif status == 'Compile Error':
+            cases_string += "💥"
+        else:
+            cases_string += "⚙️"
+        cases_string += "\n"
     user = None
     if 'id' in session:
       user = User.query.filter_by(id=session['id']).first()
-    msg1 = sub.message
-    msg2 = ""
-    for i in range(sub.cases):
-      msg2+="✅"
-    for i in range(problem.cases-sub.cases):
-      msg2+="❌"
-    if sub.message=="Processing":
-      msg2="❓"*problem.cases
-    if sub.message=="Accepted" and user.id==sub.user_id:
-      #if user.solved==0: TODO: many to many relationship between solved problems and users
-      #  user.score+=1
-      #  problem.solved+=1
-      print("Accepted")
-      if(problem.solved==1):
-        problem.solver = user.id
-      #if problem.solver==user.id and problem.gift_card=="": TODO: gift cards or paypal payouts 
+    if sub.correct == sub.cases and user.id==sub.user_id:#TODO: relationship should be many not single
+        user_solved = json.loads(user.solved)
+        if problem.id not in user_solved:
+            user_solved.append(problem.id)
+            user.solved = json.dumps(user_solved)
+            db.session.commit()
+        print("Accepted")
+        problem.solved += 1
+        db.session.commit()
+        if(problem.solved==1):
+            problem.solver = user.id
+    #if problem.solver==user.id: TODO: gift cards or paypal payouts
         
-    return render_template('submission.html',submission=sub,problem=problem,user=user,msg1=msg1,msg2=msg2)
+    return render_template('submission.html',submission=sub,problem=problem,user=user,msg1=cases_string,msg2=sub.status)
+
 
 #updates user's columns
 @app.route('/edit-account', methods=['GET','POST'])

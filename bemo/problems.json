@@ -1,0 +1,12 @@
+[
+     {
+         "title": "Sample Problem",
+         "statement": "Print the inputted text to stdout",
+         "tags": "['math', 'equation']",
+         "rating": 3,
+         "cases": 1,
+         "inputs": "['a.txt']",
+         "outputs": "['b.txt']",
+         "solved": 0
+     }
+]

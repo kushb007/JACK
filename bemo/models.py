@@ -7,30 +7,26 @@ class User(db.Model):
   username = db.Column(db.String(20), unique=True, nullable=False)
   firstname = db.Column(db.String(20), nullable=False)
   lastname = db.Column(db.String(20), nullable=False)
+  email = db.Column(db.String(120), unique=True, nullable=False)
   verified = db.Column(db.Boolean, nullable=False)
   img_file = db.Column(db.Text, nullable=False, default='default.jpeg')
   score = db.Column(db.Integer, nullable=False, default=0)
   contribution = db.Column(db.Integer, nullable=False, default=0)
-  #solved = db.relationship('Submission',backref='user_id', lazy=True)
+  #solved = db.Column(db.Text, nullable=False, default='[]')
+  solved = db.relationship('Submission',backref='user', lazy=True)
 
 class Problem(db.Model):
   id = db.Column(db.Integer, primary_key=True)
   title = db.Column(db.String(20), unique=True, nullable=False)
   date_posted = db.Column(db.DateTime, nullable=False, default=datetime.utcnow())
-  statement = db.Column(db.Text, nullable=False)
-  samplein = db.Column(db.Text)
-  sampleout = db.Column(db.Text)
-  note = db.Column(db.Text)
-  category = db.Column(db.Text)
+  statement = db.Column(db.Text, nullable=False, default='')
+  tags = db.Column(db.Text,nullable=False, default='[]')
   rating = db.Column(db.Integer, nullable=False, default=0)
   cases = db.Column(db.Integer, nullable=False, default=0)
   #filenames semicolon seperated
-  pics = db.Column(db.Text)
-  inputs = db.Column(db.Text)
-  outputs = db.Column(db.Text)
+  inputs = db.Column(db.Text,nullable=False, default='[]')
+  outputs = db.Column(db.Text, nullable=False, default='[]')
   solved = db.Column(db.Integer, nullable=False, default=0)
-  solver = db.Column(db.Integer,db.ForeignKey(User.id),nullable=True)
-  gift_card = db.Column(db.Text, nullable=False, default="")
 
 class Submission(db.Model):
   id = db.Column(db.Integer, primary_key=True)
@@ -38,15 +34,13 @@ class Submission(db.Model):
   problem_id = db.Column(db.Integer,db.ForeignKey(Problem.id),nullable=False)
   cases = db.Column(db.Integer, default=0)
   correct = db.Column(db.Boolean, default=False)
-  message = db.Column(db.Text, default="Processing")
-  errline = db.Column(db.Integer)
+  recieved = db.Column(db.Integer, default=0)
   last_check = db.Column(db.DateTime, nullable=False, default=datetime.utcnow())
   checks = db.Column(db.Integer, nullable=False, default=0)
-  #filenames semicolon seperated
-  token = db.Column(db.Text)
-  #ARRAY only work with postgre
-  #tokens = db.Column(db.ARRAY(db.String(120)))
+  #json formatted tokens
+  tokens = db.Column(db.Text, nullable=False, default='[]')
+  status = db.Column(db.Text, nullable=False, default='[]')
 
 
   def __repr__(self):
-    return f"User('{self.message}','{self.id}')"
+    return f"User('{self.status}','{self.id}')"

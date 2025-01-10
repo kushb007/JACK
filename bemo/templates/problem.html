@@ -1,6 +1,9 @@
 {% extends "layout.html" %}
 {% block content %}
 <h2>{{problem.title}}</h2>
+{% for tag in tags %}
+    <h3>tag</h3>
+{% endfor %}
 <h4>{{problem.category}}</h4>
 <h4>{{problem.date_posted}}</h4>
 <body>{{problem.statement}}</body>
@@ -21,13 +24,12 @@
     
   </form>
   {%endif%}
-<h1>ok</h1>
-<div id="editor">.</div>
+<div id="editor"></div>
 <script src="../static/ace-builds-1.5.0/src-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
 <script>
   var editor = ace.edit("editor");
     editor.setTheme("ace/theme/monokai");
-    editor.session.setMode("ace/mode/javascript");
+    editor.session.setMode("ace/mode/c_cpp");
   var textarea = document.getElementById('code_input');
   editor.getSession().setValue(textarea.value);
   editor.getSession().on('change', function(){

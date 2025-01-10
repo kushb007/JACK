@@ -36,7 +36,7 @@
 		<div class="form-group">
 		<img src="static/pics/{{img}}" class="avatar">
 		{%if pic.pic.errors%}
-			{%for error in form.pic.errors%}
+			{%for error in pic.pic.errors%}
 				{{error}}
 			{%endfor%}
 		{%endif%}
