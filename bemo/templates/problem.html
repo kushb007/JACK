@@ -6,7 +6,7 @@
 {% endfor %}
 <h4>{{problem.category}}</h4>
 <h4>{{problem.date_posted}}</h4>
-<body>{{problem.statement}}</body>
+<span>{{problem.statement}}</span>
 
 {%if user%}
 <form method="POST" action="" class="form-problem" enctype="multipart/form-data">

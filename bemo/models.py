@@ -13,7 +13,6 @@ class User(db.Model):
   score = db.Column(db.Integer, nullable=False, default=0)
   contribution = db.Column(db.Integer, nullable=False, default=0)
   #solved = db.Column(db.Text, nullable=False, default='[]')
-  solved = db.relationship('Submission',backref='user', lazy=True)
 
 class Problem(db.Model):
   id = db.Column(db.Integer, primary_key=True)
@@ -32,10 +31,10 @@ class Submission(db.Model):
   id = db.Column(db.Integer, primary_key=True)
   user_id = db.Column(db.Integer,db.ForeignKey(User.id),nullable=False)
   problem_id = db.Column(db.Integer,db.ForeignKey(Problem.id),nullable=False)
-  cases = db.Column(db.Integer, default=0)
   correct = db.Column(db.Boolean, default=False)
+  cases = db.Column(db.Integer, default=0)
   recieved = db.Column(db.Integer, default=0)
-  last_check = db.Column(db.DateTime, nullable=False, default=datetime.utcnow())
+  last_check = db.Column(db.DateTime, nullable=False, default=datetime.now(timezone.utc))
   checks = db.Column(db.Integer, nullable=False, default=0)
   #json formatted tokens
   tokens = db.Column(db.Text, nullable=False, default='[]')
