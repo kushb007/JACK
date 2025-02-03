@@ -87,21 +87,17 @@ def problems():
 #login route for redirects
 @app.route("/login")
 def login():
-  if 'id' in session:
-    print("Already have profile")
-    return redirect(url_for('home'))
-  print("Calling auth0 for login")
-  redirect_url = url_for('callback', _external=True)
-  print(redirect_url)
-  return oauth.auth0.authorize_redirect(redirect_uri=redirect_url, _external=True)
+  return oauth.auth0.authorize_redirect(
+        redirect_uri=url_for("callback", _external=True)
+    )
 
 #configured to retrieve and store from auth0
 @app.route('/callback', methods=["GET", "POST"])
 def callback():
     # Handles response from token endpoint
     token = oauth.auth0.authorize_access_token()
-    session["user"] = token #userinfo = token['userinfo']
     # Store the user information in flask session
+    session["user"] = token
     userinfo = token['userinfo']
     session['profile'] = {
       'user_id': userinfo['sub'],
@@ -116,10 +112,10 @@ def callback():
       return redirect(url_for('new_login'))
     session['id'] = detectedusr.id
     print("Welcome "+detectedusr.username)
-    return redirect('/dashboard')
+    return redirect('/')
 
 #initializes user within database
-@app.route('/newuser', methods=['GET','POST'])
+@app.route('/newlogin', methods=['GET','POST'])
 def new_login():
   if 'id' in session or 'profile' not in session:
     return redirect('/')

@@ -38,16 +38,13 @@ def save_input_output_pairs(input_texts, output_texts, title):
     output_paths = []
     problem_dir = os.path.join(UPLOAD_FOLDER, secure_filename(title))
     os.makedirs(problem_dir, exist_ok=True)  # Ensure directory exists
-
     for i, (input_text, output_text) in enumerate(zip(input_texts, output_texts)):
         input_path = os.path.join(problem_dir, f"input_{i}.txt")
         output_path = os.path.join(problem_dir, f"output_{i}.txt")
-
         with open(input_path, "w") as f:
             f.write(input_text)
         with open(output_path, "w") as f:
             f.write(output_text)
-
         input_paths.append(input_path)
         output_paths.append(output_path)
 
@@ -83,8 +80,7 @@ def add_problem(title, statement, tags, rating, test_cases):
 
 # Function to dynamically add a new test case
 def add_test_case(test_cases):
-    """Adds a new input-output pair dynamically."""
-    test_cases.loc[len(test_cases.index)] = ["", ""]  # Append an empty input-output pair
+    test_cases.append(["", ""])  # Append an empty input-output pair
     return test_cases  # Return the updated list
 
 # Function to collect and process all test cases
@@ -108,7 +104,7 @@ with gr.Blocks() as interface:
     # Dynamic test case section
     test_case_display = gr.Dataframe(
         headers=["Input", "Output"], datatype=["str", "str"], value=test_cases,
-        interactive=True, label="Test Cases"
+        interactive=True, label="Test Cases", type="array", col_count=2
     )
     
     add_case_button = gr.Button("Add Another Test Case")

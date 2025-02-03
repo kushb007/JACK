@@ -24,10 +24,12 @@
 		</thead>
 		<tbody>
 		{%for problem in problems.items%}
-			<th scope="row"><a href="{{url_for('show_prob',prob_id=problem.id)}}">{{problem.title}}</a></th>
-			<td>{{problem.category}}</td>
-    		<td>{{problem.date_posted.strftime('%Y-%m-%d')}}</td>
-    		<td>{{problem.rating}}</td>
+			<tr>
+				<th scope="row"><a href="{{url_for('show_prob',prob_id=problem.id)}}">{{problem.title}}</a></th>
+				<td>{{problem.tags}}</td>
+				<td>{{problem.date_posted.strftime('%Y-%m-%d')}}</td>
+				<td>{{problem.rating}}</td>
+			</tr>
 		{%endfor%}
 		</tbody>
 	</table>
