@@ -3,20 +3,18 @@ import requests
 import os
 from os import environ as env
 import secrets
-from flask import render_template, flash, redirect, url_for, jsonify, request
-from werkzeug.exceptions import HTTPException
+from flask import render_template, flash, redirect, url_for, request
 from werkzeug.utils import secure_filename
 from PIL import Image
 from functools import wraps
-from urllib.parse import urlparse, quote_plus, urlencode
+from urllib.parse import quote_plus, urlencode
 from bemo import app, db, session, oauth, cache
-from bemo.forms import Confirm, Picture, Create, Code
+from bemo.forms import Confirm, Picture, Code
 from bemo.models import User, Problem, Submission
-import urllib.request
 import random
 import http.client
 import base64
-from datetime import datetime, timezone
+from datetime import datetime
 from re import escape
 
 auth0 = oauth.register(
@@ -41,7 +39,7 @@ def requires_auth(f):
   def decorated(*args, **kwargs):
     if 'id' not in session:
       # Redirect to Login page here
-      return redirect('/')
+      pass
     return f(*args, **kwargs)
   return decorated
 
@@ -108,7 +106,7 @@ def callback():
     #redirect to new_login to create pair within database
     detectedusr = User.query.filter_by(sub=userinfo['sub']).first()
     print(detectedusr)
-    if detectedusr is None:
+    if detectedusr is None or detectedusr.setup==False:
       return redirect(url_for('new_login'))
     session['id'] = detectedusr.id
     print("Welcome "+detectedusr.username)
@@ -319,6 +317,7 @@ def editacct():
     user.username = form.username.data
     user.firstname = form.firstname.data
     user.lastname = form.lastname.data
+    user.setup = True
     db.session.commit()
     flash('Your account has been updated!', 'success')
     return redirect('/dashboard')

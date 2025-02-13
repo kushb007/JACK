@@ -12,6 +12,7 @@ class User(db.Model):
   img_file = db.Column(db.Text, nullable=False, default='default.jpeg')
   score = db.Column(db.Integer, nullable=False, default=0)
   contribution = db.Column(db.Integer, nullable=False, default=0)
+  setup = db.Column(db.Boolean, nullable=False, default=False)
   #solved = db.Column(db.Text, nullable=False, default='[]')
 
 class Problem(db.Model):
