@@ -11,7 +11,6 @@ class User(db.Model):
   verified = db.Column(db.Boolean, nullable=False)
   img_file = db.Column(db.Text, nullable=False, default='default.jpeg')
   score = db.Column(db.Integer, nullable=False, default=0)
-  contribution = db.Column(db.Integer, nullable=False, default=0)
   setup = db.Column(db.Boolean, nullable=False, default=False)
   #solved = db.Column(db.Text, nullable=False, default='[]')
 
@@ -23,7 +22,7 @@ class Problem(db.Model):
   tags = db.Column(db.Text,nullable=False, default='[]')
   rating = db.Column(db.Integer, nullable=False, default=0)
   cases = db.Column(db.Integer, nullable=False, default=0)
-  #filenames semicolon seperated
+  #filenames json formatted
   inputs = db.Column(db.Text,nullable=False, default='[]')
   outputs = db.Column(db.Text, nullable=False, default='[]')
   solved = db.Column(db.Integer, nullable=False, default=0)

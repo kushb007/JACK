@@ -22,7 +22,7 @@ auth0 = oauth.register(
     client_id=env.get("AUTH0_CLIENT_ID"),
     client_secret=env.get("AUTH0_CLIENT_SECRET"),
     client_kwargs={
-        'scope': 'openid profile email',
+        'scope': 'openid email profile',
     },
     server_metadata_url=f'https://{env.get("AUTH0_DOMAIN")}/.well-known/openid-configuration',
 )
@@ -63,10 +63,9 @@ def home():
     user = User.query.filter_by(id=session['id']).first()
   page = request.args.get('page', 1, type=int)
   problems = Problem.query.order_by(Problem.date_posted.desc()).paginate(page=page, per_page=5)
-  topcontributors = User.query.order_by(User.contribution).limit(5).all()
   topsolvers = User.query.order_by(User.score).limit(5).all()
   randommessage = random.choice(["Welcome to Bemo!","Solve problems and earn points!","Join the community!","Compete with others!","Improve your coding skills!","Get started now!"])
-  return render_template('home.html', problems=problems, user=user, page=page, conts=topcontributors, solvs=topsolvers,randommessage=randommessage)
+  return render_template('home.html', problems=problems, user=user, page=page, solvs=topsolvers,randommessage=randommessage)
 
 #list out problems in table format
 @app.route("/problems")
@@ -101,7 +100,8 @@ def callback():
       'user_id': userinfo['sub'],
       'name': userinfo['name'],
       'picture': userinfo['picture'],
-      'sub': userinfo['sub']
+      'sub': userinfo['sub'],
+      'email': userinfo['email']
     }
     #redirect to new_login to create pair within database
     detectedusr = User.query.filter_by(sub=userinfo['sub']).first()
@@ -132,6 +132,7 @@ def new_login():
       firstname=form.firstname.data, 
       lastname=form.lastname.data,
       img_file=filename, 
+      email=session['profile']['email'],
       sub=session['profile']['sub'],
       verified=False)
     db.session.add(user)
@@ -154,7 +155,10 @@ def new_login():
 @requires_auth
 def dashboard():
   user = User.query.filter_by(id=session['id']).first()
-  return render_template('dashboard.html', user=user)
+  solved = Submission.query.filter_by(user_id=user.id,correct=True).all()
+  solved = list(set([Problem.query.filter_by(id=sub.problem_id).first().title for sub in solved]))
+  solved_str = json.dumps(solved)
+  return render_template('dashboard.html', user=user,solved=solved_str)
 
 @app.route('/payment')
 @requires_auth
