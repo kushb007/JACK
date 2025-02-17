@@ -10,7 +10,7 @@ from werkzeug.utils import secure_filename
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-UPLOAD_FOLDER = "problem_data"  # Directory to store input-output files
+UPLOAD_FOLDER = "bemo/static/problem_data"  # Directory to store input-output files
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)  # Ensure the directory exists
 db = SQLAlchemy(app)
 
@@ -37,16 +37,19 @@ def save_input_output_pairs(input_texts, output_texts, title):
     input_paths = []
     output_paths = []
     problem_dir = os.path.join(UPLOAD_FOLDER, secure_filename(title))
+    print("problem dir",problem_dir)
     os.makedirs(problem_dir, exist_ok=True)  # Ensure directory exists
     for i, (input_text, output_text) in enumerate(zip(input_texts, output_texts)):
         input_path = os.path.join(problem_dir, f"input_{i}.txt")
         output_path = os.path.join(problem_dir, f"output_{i}.txt")
         with open(input_path, "w") as f:
+            print("input",input_text)
             f.write(input_text)
         with open(output_path, "w") as f:
+            print("output",output_text)
             f.write(output_text)
-        input_paths.append(input_path)
-        output_paths.append(output_path)
+        input_paths.append(secure_filename(title)+"/"+f"input_{i}.txt")
+        output_paths.append(secure_filename(title)+"/"+f"output_{i}.txt")
 
     return json.dumps(input_paths), json.dumps(output_paths)
 

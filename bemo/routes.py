@@ -61,11 +61,13 @@ def home():
   user = None
   if 'id' in session:
     user = User.query.filter_by(id=session['id']).first()
+    print(user)
   page = request.args.get('page', 1, type=int)
   problems = Problem.query.order_by(Problem.date_posted.desc()).paginate(page=page, per_page=5)
   topsolvers = User.query.order_by(User.score).limit(5).all()
+  topcontributors = User.query.order_by(User.contribution).limit(5).all()
   randommessage = random.choice(["Welcome to Bemo!","Solve problems and earn points!","Join the community!","Compete with others!","Improve your coding skills!","Get started now!"])
-  return render_template('home.html', problems=problems, user=user, page=page, solvs=topsolvers,randommessage=randommessage)
+  return render_template('home.html', problems=problems, user=user, page=page, solvs=topsolvers,conts=topcontributors, randommessage=randommessage)
 
 #list out problems in table format
 @app.route("/problems")
@@ -115,7 +117,10 @@ def callback():
 #initializes user within database
 @app.route('/newlogin', methods=['GET','POST'])
 def new_login():
-  if 'id' in session or 'profile' not in session:
+  if 'id' in session or session['profile'] is None:
+    print(session['id'])
+    print(session['profile'])
+    print("Redirecting to home")
     return redirect('/')
   #stores user's or auth0's picture
   pic = Picture()
@@ -188,6 +193,8 @@ def show_prob(prob_id):
       return "Problem Not Found"
     form = Code()
     if form.submit.data and form.validate():
+      print("File input",form.code.data)
+      print("Text input",form.code_area.data)
       if form.code.data is None and form.code_area.data is None:
         return "No code recieved"
       bytes_code = None
@@ -204,9 +211,9 @@ def show_prob(prob_id):
       input_files = eval(result.inputs)
       for input_file in input_files:
           case = {}
-          case['language_id']='52'
+          case['language_id']='52' #C++ TODO: make dynamic
           case['source_code']=bytes_code
-          with open(app.config['UPLOAD_FOLDER']+'txts/'+input_file,'r') as f:
+          with open(app.config['UPLOAD_FOLDER']+'/problem_data/'+input_file,'r') as f:
               case['inputs']=f.read()
           cases['submissions'].append(case)
       payload = json.dumps(cases)
@@ -225,7 +232,7 @@ def show_prob(prob_id):
       submission = Submission(user_id=session['id'],problem_id=prob_id,tokens=tokens_string,cases=result.cases)
       db.session.add(submission)
       db.session.commit()
-      submission_id = Submission.query.filter_by(token=tokens_string).first().id
+      submission_id = Submission.query.filter_by(tokens=tokens_string).first().id
       return redirect('/submission/'+str(submission_id))
     return render_template('problem.html',problem=result,form=form,user=user,tags=eval(result.tags))
 
@@ -247,7 +254,7 @@ def show_sub(sub_id):
       tokens = eval(sub.tokens)
       if len(tokens) != problem.cases:
           tokens = [None] * problem.cases
-      statuses = eval(sub.statuses)
+      statuses = eval(sub.status)
       if len(statuses) != problem.cases:
           statuses = [None] * problem.cases
       results = []
@@ -265,7 +272,7 @@ def show_sub(sub_id):
                   submission_data = json.loads(res.read().decode("utf-8"))
                   print(submission_data)
                   if(submission_data['status']['id']<3):
-                    results.append(None)
+                    results.append("Not finished")
                   else:
                     recieved_cases += 1
                     if(submission_data['status']['id']==3):
@@ -276,6 +283,7 @@ def show_sub(sub_id):
       sub.correct = correct_cases
       sub.recieved = recieved_cases
       sub.status = json.dumps(results)
+      print(sub.status)
       db.session.commit()
     cases_string = ""
     for status in eval(sub.status):

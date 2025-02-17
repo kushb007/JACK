@@ -1,6 +1,13 @@
 {% extends "layout.html" %}
 {% block content %}
 <h1>Welcome</h1>
+	<h3>Top Contributors:</h3>
+	<ol>
+	{%for cont in conts.items%}
+			<li><a href="{{url_for('show_user',username=cont.username)}}">cont.username</a></li>
+	{%endfor%}
+	</ol>
+	<h2>
 	<h3>Top Solvers: </h3>
 	<ol>
 	{%for solv in solvs.items%}

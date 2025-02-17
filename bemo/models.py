@@ -11,6 +11,7 @@ class User(db.Model):
   verified = db.Column(db.Boolean, nullable=False)
   img_file = db.Column(db.Text, nullable=False, default='default.jpeg')
   score = db.Column(db.Integer, nullable=False, default=0)
+  contribution = db.Column(db.Integer, nullable=False, default=0)
   setup = db.Column(db.Boolean, nullable=False, default=False)
   #solved = db.Column(db.Text, nullable=False, default='[]')
 
@@ -22,7 +23,7 @@ class Problem(db.Model):
   tags = db.Column(db.Text,nullable=False, default='[]')
   rating = db.Column(db.Integer, nullable=False, default=0)
   cases = db.Column(db.Integer, nullable=False, default=0)
-  #filenames json formatted
+  #filenames comma separated
   inputs = db.Column(db.Text,nullable=False, default='[]')
   outputs = db.Column(db.Text, nullable=False, default='[]')
   solved = db.Column(db.Integer, nullable=False, default=0)
@@ -31,7 +32,8 @@ class Submission(db.Model):
   id = db.Column(db.Integer, primary_key=True)
   user_id = db.Column(db.Integer,db.ForeignKey(User.id),nullable=False)
   problem_id = db.Column(db.Integer,db.ForeignKey(Problem.id),nullable=False)
-  correct = db.Column(db.Boolean, default=False)
+  correct = db.Column(db.Integer, default=0)
+  incorrect = db.Column(db.Integer,default=0)
   cases = db.Column(db.Integer, default=0)
   recieved = db.Column(db.Integer, default=0)
   last_check = db.Column(db.DateTime, nullable=False, default=datetime.now(timezone.utc))
